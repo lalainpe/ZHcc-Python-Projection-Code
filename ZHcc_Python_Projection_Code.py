@@ -16,6 +16,11 @@ flav = ["cc", "bb", "ll", "bc", "bl", "cl"]
 
 jet_type = ["ttbar_PwPy8_DiLep", "ZZ", "WZ", "Zjets", "VHcc_NLO", "VHbb_NLO"]
 
+file = "h_Clone_2L_CTagLooseCut_Nominal_Higgs_Mass_inc_hi_xt2pj"
+index1 = file.find("inc")
+index2 = file.find("hi")
+
+
 # step 3: organize data by flavour and scale with efficiencies
 
 def hist_cc(jet_type):
