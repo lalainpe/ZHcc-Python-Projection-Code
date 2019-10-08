@@ -23,7 +23,7 @@ index2 = file.find("hi")
 def hist_bkgd(sample, efficiencies):
 
 
-    hists_stack = ROOT.THStack()
+    hists_stack = None
     
     for flav in efficiencies:
         
@@ -37,21 +37,17 @@ def hist_bkgd(sample, efficiencies):
         
         hists_scaled.Scale(Eff_Scale)
     
-        hists_stack.Add(hists_scaled)
+        if hists_stack == None:
+            
+            hists_stack = hists_scaled
+            
+        else:
+            
+            hists_stack.Add(hists_scaled)
     
     return hists_stack
 
 
-# step 5: plot the new histogram. Only interested in hi 2_tag case
-
-#gathering the signal and bkgd values in the range we want to use in plot  
-
-
-
-
-
-
-# hists_VHcc = hist_VHcc_NLO(flav)
 
 Eff_C = 0.41
 Eff_B = 0.25
@@ -71,9 +67,8 @@ bkgd_stack = ROOT.THStack()
 for b in sample: 
 
     hists_bkgd = hist_bkgd(b, efficiencies)
-    hists_bkgd_sum = hists_bkgd.GetStack().Last()
 
-    bkgd_stack.Add(hists_bkgd_sum)
+    bkgd_stack.Add(hists_bkgd)
     
 canvas = TCanvas()
 bkgd_stack.Draw('hist')
@@ -98,34 +93,33 @@ def signal_significance(Eff_C):
     for b in sample: 
 
         hists_bkgd = hist_bkgd(b, efficiencies)
-        hists_bkgd_sum = hists_bkgd.GetStack().Last()
 
-        bkgd_stack.Add(hists_bkgd_sum)
+        bkgd_stack.Add(hists_bkgd)
 
-    print(bkgd_stack)
+#     print(bkgd_stack)
         
     bkgd_stack_sum = bkgd_stack.GetStack().Last()
     
-    print(bkgd_stack_sum.GetSum())
+#     print(bkgd_stack_sum.GetSum())
 
 
     hists_VHcc = hist_bkgd("VHcc_NLO", efficiencies)
-    hists_VHcc_sum = hists_VHcc.GetStack().Last()
-    hists_VHcc_sum.SetLineColor(ROOT.kOrange)
 
-    signal = hists_VHcc_sum.Integral(hists_VHcc_sum.FindBin(110), hists_VHcc_sum.FindBin(140))
+    hists_VHcc.SetLineColor(ROOT.kOrange)
+
+    signal = hists_VHcc.Integral(hists_VHcc.FindBin(110), hists_VHcc.FindBin(140))
 
     bkgd = bkgd_stack_sum.Integral(bkgd_stack_sum.FindBin(110), bkgd_stack_sum.FindBin(140))
     
-    print(bkgd)
+#     print(bkgd)
 
     s_sqrtb = signal/ math.sqrt(bkgd)
 
     canvas = TCanvas()
     bkgd_stack.Draw('hist nostack')
     canvas.Draw()
-#     return signal, bkgd, s_sqrtb
-    return bkgd_stack
+
+    return signal, bkgd, s_sqrtb, bkgd_stack
 
 
 gr_s = ROOT.TGraph()
@@ -134,42 +128,34 @@ gr_b = ROOT.TGraph()
 
 gr_sb = ROOT.TGraph()
 
-# for eff in [x/100. for x in range(0,101,1)]:
+for eff in [x/100. for x in range(0,101,1)]:
     
-#     x = signal_significance(eff)
+    x = signal_significance(eff)
     
-#     gr_s.SetPoint(gr_s.GetN(), eff, x[0])
+    gr_s.SetPoint(gr_s.GetN(), eff, x[0])
     
-#     gr_b.SetPoint(gr_b.GetN(), eff, x[1])
+    gr_b.SetPoint(gr_b.GetN(), eff, x[1])
     
-#     gr_sb.SetPoint(gr_sb.GetN(), eff, x[2])
+    gr_sb.SetPoint(gr_sb.GetN(), eff, x[2])
 
-#     print(x)
-
-# x = signal_significance(0)
-
-# print(x)
     
-    
+  
 
-# my_canvas = TCanvas()
-# gr_s.Draw('ap')
-# gr_sb.Draw('p')
-# my_canvas.Draw()
+my_canvas = TCanvas()
+gr_s.Draw('ap')
+gr_s.GetYaxis().SetTitle('Signal')
+gr_s.GetXaxis().SetTitle('c-tagging eff')
+my_canvas.Draw()
 
-# # canvas = TCanvas()
-# # x[3].Draw('hist')
-# # canvas.Draw()
+my_canvas1 = TCanvas()
+gr_sb.Draw('ap')
+gr_sb.GetYaxis().SetTitle('s/sqrt(b)')
+gr_sb.GetXaxis().SetTitle('c-tagging eff')
+my_canvas1.Draw()
 
-# my_canvas2 = TCanvas()
-# gr_b.Draw('ap')
-# my_canvas2.Draw()
+my_canvas2 = TCanvas()
+gr_b.Draw('ap')
+gr_b.GetYaxis().SetTitle('Background')
+gr_b.GetXaxis().SetTitle('c-tagging eff')
+my_canvas2.Draw()
 
-# bb_hists = hist_bb(sample)
-
-# my_canvas1 = TCanvas()
-# bb_hists.Draw("hist")
-# my_canvas1.Draw()
-# my_canvas1.Print("out.pdf")
-
-#making the signal/bkgd vs. efficiency plots 
