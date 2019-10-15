@@ -206,7 +206,7 @@ my_canvas.Draw()
 
 my_canvas1 = TCanvas()
 gr_sb.Draw('ap')
-gr_sb.GetYaxis().SetTitle('s/sqrt(b)')
+gr_sb.GetYaxis().SetTitle('S/\sqrt{B}')
 gr_sb.GetXaxis().SetTitle('c-tagging eff')
 my_canvas1.Draw()
 
