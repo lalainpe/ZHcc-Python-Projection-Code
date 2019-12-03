@@ -1,0 +1,340 @@
+import math
+import ROOT 
+from ROOT import TCanvas, TString, TFile, TGraph, TF1, TH1D, TLine, TLegend
+ROOT.gROOT.SetBatch(True)
+from operator import itemgetter
+
+
+myFile = ROOT.TFile("ZHccProjection.root")
+
+flav = ["cc", "bb", "ll", "bc", "bl", "cl"]
+
+sample = ["ttbar_PwPy8_DiLep", "ZZ", "WZ", "Zjets", "VHcc_NLO", "VHbb_NLO"]
+
+file = "h_Clone_2L_CTagLooseCut_Nominal_Higgs_Mass_inc_hi_xt2pj"
+index1 = file.find("inc")
+index2 = file.find("hi")
+
+
+def hist_bkgd(sample, efficiencies):
+
+
+    hists_stack = None
+    
+    for flav in efficiencies:
+        
+        output_line = file[:index1] + sample + "_" + file[index1:index2] + flav  + "_" + file[index2:]
+        
+        hists_hi = myFile.Get(output_line)
+        
+        hists_scaled = hists_hi.Clone()
+        
+        hists_scaled.Scale(efficiencies[flav])
+        
+        #print("efficiencies", efficiencies[flav])
+    
+        if hists_stack == None:
+            
+            hists_stack = hists_scaled
+            
+        else:
+            
+            hists_stack.Add(hists_scaled)
+    
+    return hists_stack
+
+
+def signal_significance(Eff_C, Eff_B, Eff_L):
+    
+    efficiencies = {
+    "cc" : Eff_C * Eff_C,
+    "bb" : Eff_B * Eff_B,
+    "ll" : Eff_L * Eff_L,
+    "bc" : Eff_B * Eff_C,
+    "bl" : Eff_B * Eff_L,
+    "cl" : Eff_C * Eff_L,
+    }
+    
+    bkgd_stack = ROOT.THStack()
+
+    for b in sample: 
+
+        hists_bkgd = hist_bkgd(b, efficiencies)
+
+        bkgd_stack.Add(hists_bkgd)
+        
+    bkgd_stack_sum = bkgd_stack.GetStack().Last()
+
+    hists_VHcc = hist_bkgd("VHcc_NLO", efficiencies)
+
+    hists_VHcc.SetLineColor(ROOT.kOrange)
+
+    signal = hists_VHcc.Integral(hists_VHcc.FindBin(110), hists_VHcc.FindBin(140))
+
+    bkgd = bkgd_stack_sum.Integral(bkgd_stack_sum.FindBin(110), bkgd_stack_sum.FindBin(140))
+
+    s_sqrtb = signal/math.sqrt(bkgd)
+
+
+    return signal, bkgd, s_sqrtb, bkgd_stack
+
+#################################################################################
+
+f = ROOT.TFile("EffMap.root", "READ")
+h = f.Get("EffMap")
+
+
+
+C_EFF_20_b = []
+
+C_EFF_20_l = []
+
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.20) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_20_b:
+            
+                if b == b2:
+                    keep = False
+            if keep:
+                C_EFF_20_b += [(l, b, c)]
+                
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.20) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_20_l:
+            
+                if l == l2:
+                    keep = False
+            if keep:
+                C_EFF_20_l += [(l, b, c)]
+            
+gr_sb_b_20 = ROOT.TGraph()
+gr_sb_l_20 = ROOT.TGraph()
+
+for triplet in sorted(C_EFF_20_l, key=itemgetter(0)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_20 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_l_20.SetPoint(gr_sb_l_20.GetN(), eff_l, results_20[2])
+    
+for triplet in sorted(C_EFF_20_b, key=itemgetter(1)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_20 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_b_20.SetPoint(gr_sb_b_20.GetN(), eff_b, results_20[2])
+    
+
+
+
+#################################################################################
+    
+C_EFF_30_b = []
+
+C_EFF_30_l = []
+
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.30) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_30_b:
+            
+                if b == b2:
+                    keep = False
+            if keep:
+                C_EFF_30_b += [(l, b, c)]
+                
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.30) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_30_l:
+            
+                if l == l2:
+                    keep = False
+            if keep:
+                C_EFF_30_l += [(l, b, c)]
+            
+gr_sb_b_30 = ROOT.TGraph()
+gr_sb_l_30 = ROOT.TGraph()
+
+for triplet in sorted(C_EFF_30_l, key=itemgetter(0)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_30 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_l_30.SetPoint(gr_sb_l_30.GetN(), eff_l, results_30[2])
+    
+for triplet in sorted(C_EFF_30_b, key=itemgetter(1)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_30 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_b_30.SetPoint(gr_sb_b_30.GetN(), eff_b, results_30[2])
+    
+
+
+
+
+#################################################################################
+    
+C_EFF_41_b = []
+
+C_EFF_41_l = []
+
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.41) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_41_b:
+            
+                if b == b2:
+                    keep = False
+            if keep:
+                C_EFF_41_b += [(l, b, c)]
+                
+for l_index in range(1, h.GetNbinsY()+1):
+    for b_index in range(1, h.GetNbinsX()+1):
+        c = h.GetBinContent(b_index, l_index)
+        b = h.GetXaxis().GetBinCenter(b_index)
+        l = h.GetYaxis().GetBinCenter(l_index)
+        if abs(c-0.41) < 0.01:
+            keep = True
+            for l2, b2, c2 in C_EFF_41_l:
+            
+                if l == l2:
+                    keep = False
+            if keep:
+                C_EFF_41_l += [(l, b, c)]
+            
+gr_sb_b_41 = ROOT.TGraph()
+gr_sb_l_41 = ROOT.TGraph()
+
+for triplet in sorted(C_EFF_41_l, key=itemgetter(0)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_41 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_l_41.SetPoint(gr_sb_l_41.GetN(), eff_l, results_41[2])
+    
+for triplet in sorted(C_EFF_41_b, key=itemgetter(1)):
+    
+    eff_l = 1./triplet[0]
+    eff_b = 1./triplet[1]
+    eff_c = triplet[2]
+    
+    results_41 = signal_significance(eff_c, eff_b, eff_l)
+    
+    gr_sb_b_41.SetPoint(gr_sb_b_41.GetN(), eff_b, results_41[2])
+    
+
+
+
+
+    
+
+my_canvas = TCanvas()
+gr_sb_b_20.Draw('ap')
+gr_sb_b_20.Draw("C")
+gr_sb_b_20.GetYaxis().SetTitle('Significance')
+gr_sb_b_20.GetXaxis().SetTitle('b-tagging eff')
+gr_sb_b_20.SetTitle('c-tagging efficiency = 20%')
+gr_sb_b_20.SetMarkerStyle(8)
+gr_sb_b_20.SetMarkerSize(0.5)
+gr_sb_b_20.SetMarkerColor(32)
+gr_sb_b_20.SetLineColor(32)
+my_canvas.Draw()
+
+my_canvas1 = TCanvas()
+gr_sb_l_20.Draw('ap')
+gr_sb_l_20.Draw("C")
+gr_sb_l_20.GetYaxis().SetTitle('Significance')
+gr_sb_l_20.GetXaxis().SetTitle('l-tagging eff')
+gr_sb_l_20.SetTitle('c-tagging efficiency = 20%')
+gr_sb_l_20.SetMarkerStyle(8)
+gr_sb_l_20.SetMarkerSize(0.5)
+gr_sb_l_20.SetMarkerColor(46)
+gr_sb_l_20.SetLineColor(46)
+my_canvas1.Draw()
+
+my_canvas2 = TCanvas()
+gr_sb_b_30.Draw('ap')
+gr_sb_b_30.Draw("C")
+gr_sb_b_30.GetYaxis().SetTitle('Significance')
+gr_sb_b_30.GetXaxis().SetTitle('b-tagging eff')
+gr_sb_b_30.SetTitle('c-tagging efficiency = 30%')
+gr_sb_b_30.SetMarkerStyle(8)
+gr_sb_b_30.SetMarkerSize(0.5)
+gr_sb_b_30.SetMarkerColor(32)
+gr_sb_b_30.SetLineColor(32)
+my_canvas2.Draw()
+
+my_canvas3 = TCanvas()
+gr_sb_l_30.Draw('ap')
+gr_sb_l_30.Draw("C")
+gr_sb_l_30.GetYaxis().SetTitle('Significance')
+gr_sb_l_30.GetXaxis().SetTitle('l-tagging eff')
+gr_sb_l_30.SetTitle('c-tagging efficiency = 30%')
+gr_sb_l_30.SetMarkerStyle(8)
+gr_sb_l_30.SetMarkerSize(0.5)
+gr_sb_l_30.SetMarkerColor(46)
+gr_sb_l_30.SetLineColor(46)
+my_canvas3.Draw()
+
+my_canvas4 = TCanvas()
+gr_sb_b_41.Draw('ap')
+gr_sb_b_41.Draw("C")
+gr_sb_b_41.GetYaxis().SetTitle('Significance')
+gr_sb_b_41.GetXaxis().SetTitle('b-tagging eff')
+gr_sb_b_41.SetTitle('c-tagging efficiency = 41%')
+gr_sb_b_41.SetMarkerStyle(8)
+gr_sb_b_41.SetMarkerSize(0.5)
+gr_sb_b_41.SetMarkerColor(32)
+gr_sb_b_41.SetLineColor(32)
+my_canvas4.Draw()
+
+my_canvas5 = TCanvas()
+gr_sb_l_41.Draw('ap')
+gr_sb_l_41.Draw("C")
+gr_sb_l_41.GetYaxis().SetTitle('Significance')
+gr_sb_l_41.GetXaxis().SetTitle('l-tagging eff')
+gr_sb_l_41.SetTitle('c-tagging efficiency = 41%')
+gr_sb_l_41.SetMarkerStyle(8)
+gr_sb_l_41.SetMarkerSize(0.5)
+gr_sb_l_41.SetMarkerColor(46)
+gr_sb_l_41.SetLineColor(46)
+my_canvas5.Draw()
